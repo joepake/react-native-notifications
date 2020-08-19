@@ -17,9 +17,18 @@ NSMutableDictionary* _backgroundActionCompletionHandlers;
 
 - (instancetype)init {
     self = [super init];
-    _actionCompletionHandlers = [NSMutableDictionary new];
-    _presentationCompletionHandlers = [NSMutableDictionary new];
-    _backgroundActionCompletionHandlers = [NSMutableDictionary new];
+    
+    if (!_actionCompletionHandlers){
+        _actionCompletionHandlers = [NSMutableDictionary new];
+    }
+    
+    if (!_presentationCompletionHandlers) {
+         _presentationCompletionHandlers = [NSMutableDictionary new];
+    }
+    
+    if (!_backgroundActionCompletionHandlers) {
+         _backgroundActionCompletionHandlers = [NSMutableDictionary new];
+    }
     return self;
 }
 
