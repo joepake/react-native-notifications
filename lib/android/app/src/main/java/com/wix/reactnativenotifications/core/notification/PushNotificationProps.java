@@ -15,7 +15,8 @@ public class PushNotificationProps {
     }
 
     public String getBody() {
-        return getBundleStringFirstNotNull("gcm.notification.body", "body");
+//        return getBundleStringFirstNotNull("gcm.notification.body", "body");
+        return mBundle.getString("alert");
     }
 
     public Bundle asBundle() {

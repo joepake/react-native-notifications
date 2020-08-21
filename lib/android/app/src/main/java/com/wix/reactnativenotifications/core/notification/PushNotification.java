@@ -4,12 +4,15 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.RemoteInput;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.RequiresApi;
 
 import com.facebook.react.bridge.ReactContext;
+import com.wix.reactnativenotifications.R;
 import com.wix.reactnativenotifications.core.AppLaunchHelper;
 import com.wix.reactnativenotifications.core.AppLifecycleFacade;
 import com.wix.reactnativenotifications.core.AppLifecycleFacade.AppVisibilityListener;
@@ -22,7 +25,11 @@ import com.wix.reactnativenotifications.core.ProxyService;
 import static com.wix.reactnativenotifications.Defs.NOTIFICATION_OPENED_EVENT_NAME;
 import static com.wix.reactnativenotifications.Defs.NOTIFICATION_RECEIVED_EVENT_NAME;
 
+@RequiresApi(api = Build.VERSION_CODES.N)
 public class PushNotification implements IPushNotification {
+    public static final String KEY_TEXT_REPLY = "text_reply";
+    public static final String CHANNEL_ID = "BBW_ID";
+    public static final String CHANNEL_NAME = "BBW";
 
     final protected Context mContext;
     final protected AppLifecycleFacade mAppLifecycleFacade;
@@ -136,16 +143,28 @@ public class PushNotification implements IPushNotification {
         return NotificationIntentAdapter.createPendingNotificationIntent(mContext, cta, mNotificationProps);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     protected Notification buildNotification(PendingIntent intent) {
         return getNotificationBuilder(intent).build();
     }
 
     protected Notification.Builder getNotificationBuilder(PendingIntent intent) {
 
-        String CHANNEL_ID = "channel_01";
-        String CHANNEL_NAME = "Channel Name";
+        String replyLabel = mContext.getString(R.string.reply);
+
+        RemoteInput remoteInput = new RemoteInput.Builder(KEY_TEXT_REPLY)
+                .setLabel(replyLabel)
+                .setAllowFreeFormInput(true)
+                .build();
+
+        Notification.Action action =
+                new Notification.Action.Builder(R.mipmap.ic_launcher, replyLabel, getCTAPendingIntent())
+                        .addRemoteInput(remoteInput)
+                        .setAllowGeneratedReplies(true)
+                        .build();
 
         final Notification.Builder notification = new Notification.Builder(mContext)
+                .setActions(action)
                 .setContentTitle(mNotificationProps.getTitle())
                 .setContentText(mNotificationProps.getBody())
                 .setContentIntent(intent)
