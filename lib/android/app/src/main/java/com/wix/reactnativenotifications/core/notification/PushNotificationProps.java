@@ -2,6 +2,9 @@ package com.wix.reactnativenotifications.core.notification;
 
 import android.os.Bundle;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class PushNotificationProps {
 
     protected Bundle mBundle;
@@ -16,6 +19,23 @@ public class PushNotificationProps {
 
     public String getBody() {
         return getBundleStringFirstNotNull("gcm.notification.body", "alert");
+    }
+
+    public boolean isNewMsgType() {
+        String type = "";
+        Object additionalData = mBundle.get("additionalData");
+        try {
+            JSONObject jsonObject = new JSONObject(additionalData.toString());
+            type = jsonObject.getString("type");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return type.equals("2");
+    }
+
+    public String getSound(){
+        return mBundle.getString("sound");
     }
 
     public Bundle asBundle() {

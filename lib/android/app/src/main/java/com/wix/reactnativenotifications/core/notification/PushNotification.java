@@ -7,6 +7,9 @@ import android.app.PendingIntent;
 import android.app.RemoteInput;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.RequiresApi;
@@ -21,6 +24,11 @@ import com.wix.reactnativenotifications.core.InitialNotificationHolder;
 import com.wix.reactnativenotifications.core.JsIOHelper;
 import com.wix.reactnativenotifications.core.NotificationIntentAdapter;
 import com.wix.reactnativenotifications.core.ProxyService;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Set;
 
 import static com.wix.reactnativenotifications.Defs.NOTIFICATION_OPENED_EVENT_NAME;
 import static com.wix.reactnativenotifications.Defs.NOTIFICATION_RECEIVED_EVENT_NAME;
@@ -149,7 +157,6 @@ public class PushNotification implements IPushNotification {
     }
 
     protected Notification.Builder getNotificationBuilder(PendingIntent intent) {
-
         String replyLabel = mContext.getString(R.string.reply);
 
         RemoteInput remoteInput = new RemoteInput.Builder(KEY_TEXT_REPLY)
@@ -162,23 +169,39 @@ public class PushNotification implements IPushNotification {
                         .addRemoteInput(remoteInput)
                         .setAllowGeneratedReplies(true)
                         .build();
+        AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .build();
 
         final Notification.Builder notification = new Notification.Builder(mContext)
-                .setActions(action)
                 .setContentTitle(mNotificationProps.getTitle())
                 .setContentText(mNotificationProps.getBody())
                 .setContentIntent(intent)
                 .setDefaults(Notification.DEFAULT_ALL)
+                .setSound(getSound(mNotificationProps.getSound()), attributes)
                 .setAutoCancel(true);
+
+        if (mNotificationProps.isNewMsgType()) {
+            notification.setActions(action);
+        }
 
         setUpIcon(notification);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
-                    CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_DEFAULT);
             final NotificationManager notificationManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
-            notificationManager.createNotificationChannel(channel);
+
+            NotificationChannel channel = notificationManager.getNotificationChannel(CHANNEL_ID);
+            if (channel == null) {
+                channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
+
+                // Configure the notification channel.
+                channel.enableLights(true);
+                channel.setVibrationPattern(new long[]{1000, 1000});
+                channel.enableVibration(true);
+                channel.setSound(getSound(mNotificationProps.getSound()), attributes);
+
+                notificationManager.createNotificationChannel(channel);
+            }
             notification.setChannelId(CHANNEL_ID);
         }
 
@@ -238,4 +261,27 @@ public class PushNotification implements IPushNotification {
     private int getAppResourceId(String resName, String resType) {
         return mContext.getResources().getIdentifier(resName, resType, mContext.getPackageName());
     }
+
+    private Uri getSound(String sound) {
+        if (sound == null) {
+            return null;
+        } else if (sound.contains("://")) {
+            return Uri.parse(sound);
+        } else if (sound.equalsIgnoreCase("default")) {
+            return RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        } else {
+            int soundResourceId = getResourceId("raw", sound);
+            if (soundResourceId == 0) {
+                soundResourceId = getResourceId("raw", sound.substring(0, sound.lastIndexOf('.')));
+            }
+            return Uri.parse("android.resource://" + mContext.getPackageName() + "/" + soundResourceId);
+        }
+    }
+
+    private int getResourceId(String type, String image) {
+        return mContext
+                .getResources()
+                .getIdentifier(image, type, mContext.getPackageName());
+    }
+
 }
