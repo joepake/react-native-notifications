@@ -15,8 +15,7 @@ public class PushNotificationProps {
     }
 
     public String getBody() {
-//        return getBundleStringFirstNotNull("gcm.notification.body", "body");
-        return mBundle.getString("alert");
+        return getBundleStringFirstNotNull("gcm.notification.body", "alert");
     }
 
     public Bundle asBundle() {
@@ -41,7 +40,7 @@ public class PushNotificationProps {
     }
 
     private String getBundleStringFirstNotNull(String key1, String key2) {
-        String result = mBundle.getString(key1);
-        return result == null ? mBundle.getString(key2) : result;
+        Object result = mBundle.get(key1);
+        return result == null ? String.valueOf(mBundle.get(key2)) : String.valueOf(result);
     }
 }
